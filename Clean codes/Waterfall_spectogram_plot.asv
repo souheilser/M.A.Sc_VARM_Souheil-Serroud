@@ -1,0 +1,98 @@
+clear all; clc; close all
+
+
+table=importfile(['Z:\Private Folders\Souheil Serroud\Test Data\With compliant bearing\8 springs\continous 1000.xlsx']);
+t=table.data(1:end,5);
+fs = 2000;
+dt=1/fs;
+
+max_speed = 19.5;
+
+t0 = 2;
+time_window = 99-t0;
+
+
+if t0==0
+    p0=1;
+else
+    p0=t0/dt;
+end
+
+pf=p0+time_window/dt;
+
+t=t(p0:pf)-(t0-dt);
+
+accel1=table.data(p0:pf,1);
+N=0;
+laser1=table.data(p0+N:pf+N,2)*2.735978; 
+laser2=table.data(p0:pf,3)*2.735978;
+
+x=accel1;
+r = sqrt(laser1.^2+laser2.^2);
+% x=r;
+t1 = time_window;
+T = 0:1/fs:t1;
+
+f0 = 1/fs;
+f1 = max_speed*60;
+
+rpm=linspace(f0,f1,length(x));
+% Compute the desired window length in samples. Here we take it as 20% of the signal length
+windowLength = round(length(x)*0.2);  
+
+% Generate a flat top window of desired length
+window = flattopwin(windowLength);
+
+% Compute the rpm-frequency map using the custom window
+[map,fr,rp,t,res] = rpmfreqmap(x,fs,rpm,fs/1024,'Amplitude','rms','OverlapPercent',95,'Scale','dB');
+[FR, RP] = meshgrid(fr, rp);
+
+% h1 = openfig('Z:\Private Folders\Souheil Serroud\Images memoire\shaft only\ramping speed\speed profile.fig'); % open figure
+% xlim([0 100]);
+% ax1 = gca; % get handle to axes of figure
+% fig1 = get(ax1,'children'); 
+
+waterfall(RP,FR,map');
+ylabel('Frequency (Hz)','FontSize',14)
+xlabel('RPM','FontSize',12) 
+cb = colorbar;
+ylabel(cb, 'Amplitude (dB)','Interpreter','latex','FontSize',14) % Labeling the color bar
+hold on
+% patch([13 13 13 13], [0 1000 1000 0], [0 0 0.05 0.05], 'cyan')  
+caxis([-85 -20])
+view([-9.597 72.570])
+%zlim([0 1.1]);
+xlim([0 max_speed*60]);
+ylim([0 500]);
+
+% Plot 1x RPM line
+hold on;
+x = [0 max_speed*60];  % RPM values
+y = x / 60;  % Corresponding frequency values in Hz
+y3 = 50/60*x;
+y5 = 100/60*x;
+y4 = 200/60*x;
+z = zeros(size(x))+100;  % Z-values (we put the line at the bottom of the plot)
+
+line2=plot3(x, y3, z, 'r-','DisplayName', '50x $\omega_e$ line','LineWidth',1);  % Plot the line
+line3=plot3(x, y4, z, 'r-','DisplayName', '200x $\omega_e$ line','LineWidth',1);  % Plot the line
+line4=plot3(x, y5, z, 'r-','DisplayName', '100x $\omega_e$ line','LineWidth',1);  % Plot the line
+
+line5=plot3(x,[25 25],z,'g-','DisplayName', '25 Hz','LineWidth',1.5);
+line6=plot3(x,[45 45],z,'g-','DisplayName', '45 Hz','LineWidth',1.5);
+line7=plot3(x,[80 80],z,'g-','DisplayName', '80 Hz','LineWidth',1.5);
+
+line1=plot3(x, y, z, 'r-','DisplayName', '1x $\omega_e$ line','LineWidth',1);  % Plot the line
+text(-0.13, 0.5,'a)','Interpreter','latex','FontSize',16,'Units', 'Normalized', 'VerticalAlignment', 'Top');
+
+% legend('','1x $\omega_e$ line','50x $\omega_e$ line','100x $\omega_e$ line','200x $\omega_e$ line','7 Hz', '45 Hz','80 Hz');
+% legend([line1,line2,line3,line4,line5,line6,line7]);
+% legend([line1, line4]);
+view(2)
+
+% s1 = subplot(4,1,4);
+% ylabel('   $\Omega$', 'FontSize', 16);
+% xlabel('$t$ (s)', 'FontSize', 16)
+% xlim([0 100]);
+% copyobj(fig1,s1);
+
